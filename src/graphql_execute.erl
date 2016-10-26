@@ -214,6 +214,7 @@ resolve_obj_(Path, Ctx, Cur, #field { selection_set = SSet, schema_obj = FObj } 
                             %% Failure to retrieve a result cuts the computation at this node
                             {ok, Alias, null};
                         {ok, Result} ->
+                            ok = coerce_type(Ty, FObj),
                             case handle_type(Path, Ctx, Result, Ty, SSet, FObj) of
                                 {Materialized, []} ->
                                     {ok, Alias, Materialized};
@@ -224,6 +225,13 @@ resolve_obj_(Path, Ctx, Cur, #field { selection_set = SSet, schema_obj = FObj } 
                            exit({wrong_resolver_function_return, Fun, Alias, Wrong})
                    end
             end
+    end.
+
+coerce_type(X, X) -> ok;
+coerce_type(X, Obj) when is_binary(X) ->
+    case graphql_schema:id(Obj) of
+        X -> ok;
+        Y -> {X, '/=', Y}
     end.
 
 handle_type(Path, Ctx, Result, Ty, SSet, FObj) ->
